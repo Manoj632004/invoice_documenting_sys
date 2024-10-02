@@ -1,6 +1,6 @@
 # invoice documenting system
 
-•	The aim of this project is to automate invoice data extraction 
+•	The aim of this project is to automate invoice data extraction <br/>
 •	Utilized OCR, appropriate text preprocessing to feed LLM with RAG to extract and structure text from invoice images into formatted tables. <br/>
 libraries and tech used: PyTorch, pandas, OpenCV, PyTesseract, HuggingFace RAG, GPT-2
 
