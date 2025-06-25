@@ -40,12 +40,7 @@ def save_to_csv(structured_data):
         output_path = os.path.join(output_dir, f"{os.path.splitext(image_file)[0]}.csv")
         df.to_csv(output_path, index=False)
 
-def preprocess_image(image_path):
-    img = cv2.imread(image_path)
-    if img is None:
-        print(f"Error: Could not load image at path: {image_path}")
-        return None
-
+def preprocess_image(img):
     h, w = img.shape[:2]
     scale = max(400 / h, 400 / w)
     if scale > 1:
@@ -82,43 +77,37 @@ def preprocess_image(image_path):
 
 reader = easyocr.Reader(['en'], gpu=False)
 
-def extract_single_table_region_per_image(images, min_words=3):
+def extract_single_table_region_per_image(img, min_words=3):
+    _, binary = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
-    final_crops = []
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (30, 5))
+    dilated = cv2.dilate(binary, kernel, iterations=1)
 
-    for img in images:
-        _, binary = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    cropped_rows = []
 
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (30, 5))
-        dilated = cv2.dilate(binary, kernel, iterations=1)
+    for c in sorted(contours, key=lambda ctr: cv2.boundingRect(ctr)[1]):
+        x, y, w, h = cv2.boundingRect(c)
+        if h > 15 and w > 50:
+            cropped = img[y:y+h, x:x+w]
+            cropped_rows.append((cropped, w * h))
 
-        contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        cropped_rows = []
+    best_crop = None
+    max_words = 0
 
-        for c in sorted(contours, key=lambda ctr: cv2.boundingRect(ctr)[1]):
-            x, y, w, h = cv2.boundingRect(c)
-            if h > 15 and w > 50:
-                cropped = img[y:y+h, x:x+w]
-                cropped_rows.append((cropped, w * h))
+    for crop, _ in cropped_rows:
+        result = reader.readtext(crop, detail=0, paragraph=False)
+        if len(result) > max_words:
+            max_words = len(result)
+            best_crop = crop
 
-        best_crop = None
-        max_words = 0
-
-        for crop, _ in cropped_rows:
-            result = reader.readtext(crop, detail=0, paragraph=False)
-            if len(result) > max_words:
-                max_words = len(result)
-                best_crop = crop
-
-        if best_crop is not None and max_words >= min_words:
-            final_crops.append(best_crop)
-        elif cropped_rows:
-            fallback_crop = max(cropped_rows, key=lambda x: x[1])[0]
-            final_crops.append(fallback_crop)
-        else:
-            final_crops.append(img)
-
-    return final_crops 
+    if best_crop is not None and max_words >= min_words:
+        return best_crop
+    elif cropped_rows:
+        fallback_crop = max(cropped_rows, key=lambda x: x[1])[0]
+        return fallback_crop
+    else:
+        return img
 
 def extract_text_from_cropped_image(cropped_img):
     reader = easyocr.Reader(['en'])
@@ -130,7 +119,6 @@ def extract_text_from_cropped_image(cropped_img):
 
     temp_file.close()
     os.remove(temp_file.name)
-
     return text
 
 def preprocess_text(text):
