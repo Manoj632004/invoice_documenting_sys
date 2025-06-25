@@ -8,8 +8,9 @@ invoice image datasets:<br/>
 https://machinelearning.inginf.units.it/data-and-tools/ghega-dataset<br/>
 https://universe.roboflow.com/jakob-awn1e/receipt-or-invoice/dataset/5
 
+![image](https://github.com/user-attachments/assets/0b1067a9-e9a9-4833-9646-b768da0e46f4)
 
+remarks:
 
-table-transformer-detection from hugging face did not work for table det4ection as most invoicees and recipets dont have defined boundaries of tables
-
+table-transformer-detection from hugging face did not work for table det4ection as most invoicees and recipets dont have defined boundaries of tables;
 Layout Parser didnt work because depreciated functionalities
