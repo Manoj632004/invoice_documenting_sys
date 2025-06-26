@@ -8,7 +8,8 @@ invoice image datasets:<br/>
 https://machinelearning.inginf.units.it/data-and-tools/ghega-dataset<br/>
 https://universe.roboflow.com/jakob-awn1e/receipt-or-invoice/dataset/5
 
-![image](https://github.com/user-attachments/assets/0b1067a9-e9a9-4833-9646-b768da0e46f4)
+![image](https://github.com/user-attachments/assets/8d83120e-ff1b-4acc-8028-5beef79f5df6)
+
 
 remarks:
 
