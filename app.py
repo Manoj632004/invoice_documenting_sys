@@ -16,10 +16,12 @@ st.title("AI Document Parser")
 
 uploaded_files = st.file_uploader("Upload one or more images", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
 
-if uploaded_files:
+if uploaded_files and 'processed_data' not in st.session_state:
+    st.session_state.processed_data = []
+    st.session_state.download_ready = []
+
     st.info("Processing images...")
     progress = st.progress(0)
-    processed_data = []
 
     for i, uploaded_file in enumerate(uploaded_files):
         img = Image.open(uploaded_file).convert("RGB")
@@ -41,16 +43,18 @@ if uploaded_files:
         progress.progress(85 + i * 15)
 
         filename_base = os.path.splitext(uploaded_file.name)[0]
-        csv_path = save_to_csv([structured], filename=filename_base + ".csv") 
+        csv_path = save_to_csv(structured) 
 
         progress.progress(min(95 + i * 2, 100))
 
-        with open(csv_path, "rb") as f:
-            st.download_button(
-                label=f"Download CSV for {uploaded_file.name}",
-                data=f,
-                file_name=os.path.basename(csv_path),
-                mime="text/csv"
-            )
+        st.session_state.processed_data.append((filename_base, csv_path))
+        st.session_state.download_ready.append(True)
 
     st.success("✅ All files processed!")
+    
+if 'download_ready' in st.session_state:
+    for i, (filename, path) in enumerate(st.session_state.processed_data):
+        with open(path, "rb") as f:
+            if st.download_button(f"Download CSV for {filename}", f, file_name=f"{filename}.csv", key=f"dl_{i}"):
+                st.session_state.clear()
+                st.rerun()
