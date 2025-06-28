@@ -1,6 +1,5 @@
-from PIL import Image
 import os
-import pandas as pd
+import csv
 import cv2
 import numpy as np
 import easyocr
@@ -11,34 +10,28 @@ from gpt4all import GPT4All
 model = GPT4All("Meta-Llama-3-8B-Instruct.Q4_0.gguf")
 
 def fine_tune_gpt4all(extracted_data):
-    structured_data = []
-
-    for data in extracted_data:
-        prompt = f"Give title to the table and construct table with the following data: {data}. Return the table as JSON."
-
-        with model.chat_session():
-          response = model.generate(prompt, max_tokens=1024)
-
-        generated_json = response['choices'][0]['message']['content']
-
-        structured_data.append({
-            'image_file': data['image_file'],
-            'json_table': generated_json
-        })
-
-    return structured_data
+    prompt = f'''Construct csv  with the following data: {extracted_data}. The data is extracted text from a invoice table. Return the table as a strict csv. Strickly Do nott give any comments, just return the csv. below is an example of how the value is supposed to returned
+        coloumn1, coloumn2...<newline symbol>
+        value1_1, value2_1...<newline symbol>
+        value1_2, value2_2...<newline symbol>
+    '''
+    with model.chat_session():
+        response = model.generate(prompt, max_tokens=1024)
+    for line in response.strip().splitlines():
+        if ',' in line and not line.lower().startswith("here"):
+            return line.strip()
+    
 
 def save_to_csv(structured_data):
-    for data in structured_data:
-        json_table = data['json_table']
-        image_file = data['image_file']
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".csv", mode='w', newline='', encoding='utf-8')
+    writer = csv.writer(temp_file)
 
-        df = pd.read_json(json_table)
+    for line in structured_data.strip().split('\n'):
+        row = [cell.strip() for cell in line.split(',')]
+        writer.writerow(row)
 
-        output_dir = 'structured_data/invoice'  
-        os.makedirs(output_dir, exist_ok=True)
-        output_path = os.path.join(output_dir, f"{os.path.splitext(image_file)[0]}.csv")
-        df.to_csv(output_path, index=False)
+    temp_file.close()
+    return temp_file.name
 
 def preprocess_image(img):
     h, w = img.shape[:2]
