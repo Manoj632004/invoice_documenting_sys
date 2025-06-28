@@ -23,18 +23,15 @@ def fine_tune_gpt4all(extracted_data):
     
 
 def save_to_csv(structured_data):
-    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".csv", mode='w')
-    writer = None
-    for row in structured_data:
-        if writer is None:
-            if isinstance(row, dict):
-                writer = csv.DictWriter(temp_file, fieldnames=row.keys())
-                writer.writeheader()
-            else:
-                writer = csv.writer(temp_file)
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".csv", mode='w', newline='', encoding='utf-8')
+    writer = csv.writer(temp_file)
+
+    for line in structured_data.strip().split('\n'):
+        row = [cell.strip() for cell in line.split(',')]
         writer.writerow(row)
+
     temp_file.close()
-    return temp_file.name 
+    return temp_file.name
 
 def preprocess_image(img):
     h, w = img.shape[:2]

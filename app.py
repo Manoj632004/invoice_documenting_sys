@@ -2,6 +2,7 @@ import streamlit as st
 import numpy as np
 import os
 from PIL import Image
+import streamlit.components.v1 as components
 
 from model import (
     preprocess_image,
@@ -45,16 +46,25 @@ if uploaded_files and 'processed_data' not in st.session_state:
         filename_base = os.path.splitext(uploaded_file.name)[0]
         csv_path = save_to_csv(structured) 
 
-        progress.progress(min(95 + i * 2, 100))
+        progress.progress(100)
 
         st.session_state.processed_data.append((filename_base, csv_path))
         st.session_state.download_ready.append(True)
 
     st.success("✅ All files processed!")
-    
+
+
+def resetpage():
+    components.html("""
+        <script>
+            window.location.reload();
+        </script>
+    """, height=0)
+
+
 if 'download_ready' in st.session_state:
     for i, (filename, path) in enumerate(st.session_state.processed_data):
         with open(path, "rb") as f:
             if st.download_button(f"Download CSV for {filename}", f, file_name=f"{filename}.csv", key=f"dl_{i}"):
                 st.session_state.clear()
-                st.rerun()
+                resetpage()
